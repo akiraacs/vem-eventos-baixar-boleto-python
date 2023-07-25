@@ -1,5 +1,6 @@
 from datetime import datetime
 from time import sleep
+from loguru import logger
 
 from playwright.sync_api import sync_playwright
 
@@ -60,51 +61,52 @@ class ProvemCompras(IniciaBrowser):
         #-----DATA DE ANÁLISE PARA OS BOLETOS-----
         data_atual = datetime.now()
         mes_atual = datetime.now().month
-        data_vencimento_analise = datetime(data_atual.year, mes_atual, 9).strftime('%d/%m')
+        data_vencimento_analise = datetime(year=data_atual.year, month=mes_atual, day=9).strftime('%d/%m')
 
         boleto_encontrado = False
         index = 0
+
         while index <= 8:
             # try:
-            self.page.locator('.m-10 > .bg-white > div > div > div:nth-child(4) > span:nth-child(2)').locator(f'nth={index}').click()
-            sleep(8)
+            self.page.locator('.m-10 > .bg-white > div > div > div:nth-child(4) > span:nth-child(2)').locator(f'nth={index}')
 
             bloco_pagamento = self.page.locator('.m-10').locator(f'nth={index}').inner_text().split('\n')
             data_vencimento_boleto = bloco_pagamento[1]
             status_boleto = bloco_pagamento[4]
+            info_boleto = ''
 
-            self.page.pause()
+            print(len(bloco_pagamento))
+            if len(bloco_pagamento) > 5:
+                info_boleto = bloco_pagamento[5]
 
-            if data_vencimento_analise in data_vencimento_boleto and status_boleto == 'Pendente':
-
+            if data_vencimento_analise in data_vencimento_boleto and status_boleto == 'Pendente' and info_boleto != 'Atualizar Pagamento':
                 boleto_encontrado = True
-                print('entrou')
+                logger.info('entrou')
                 with self.page.expect_popup() as page1_info:
                     self.page.get_by_role("button", name="Confirmar").click()
                 page1 = page1_info
-                print(page1)
-                sleep(1000)
 
-                index += 1
                 break
-                
-            if boleto_encontrado == False:
-                raise Exception('Não possui boleto do dia 09 para o mês vigente')
+
+            index += 1
+
+        sleep(1000)
+        if boleto_encontrado == False:
+            raise Exception('Não possui boleto do dia 09 para o mês vigente')
 
                 # except Exception:
                 #     pass
-
 
         # except Exception as error:
         #     print(error)
 
         # print('tentando fazer download')
         # with self.page.expect_download() as download_info:
-        #     self.page.get_by_role("button", name="Confirmar").click()
-        #     download = download_info.value
-        #     print(download.path())
-        # download.save_as('C:\\ROBO BAIXAR BOLETO\\boleto.pdf')
-        # print('fim')
+        #     self.page.get_by_role("button", name="Confirmar")
+        # download = download_info.value
+        # print(download.path())
+        # # download.save_as('C:\\ROBO BAIXAR BOLETO\\boleto.pdf')
+        # # print('fim')
 
 if __name__ == '__main__':
     cpf_cliente = '70136747612'
